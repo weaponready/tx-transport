@@ -1,0 +1,16 @@
+netty:
+  server: 192.168.1.101
+  port: 23123
+  timeout: 30
+spring:
+  datasource:
+    username: root
+    password: skadoosh
+    url: jdbc:mysql://localhost:3306/adv_content?useUnicode=true&characterEncoding=utf8&useSSL=false
+    platform: mysql
+    driver-class-name: com.mysql.jdbc.Driver
+logging:
+  level:
+    io.netty: DEBUG
+    cn.skadoosh: DEBUG
+    org.springframework: INFO
