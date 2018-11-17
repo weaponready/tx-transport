@@ -2,6 +2,7 @@ package cn.skadoosh.tx.config;
 
 import cn.skadoosh.tx.TxClient;
 import cn.skadoosh.tx.handler.AuthHandler;
+import cn.skadoosh.tx.handler.DemoCmdHandler;
 import cn.skadoosh.tx.transport.Dispatcher;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +24,6 @@ public class ClientConfig {
     @Bean
     public Dispatcher dispatcher(){
         Dispatcher dispatcher = new Dispatcher();
-        dispatcher.setMsgHandlers(Lists.newArrayList(new AuthHandler()));
         return dispatcher;
     }
 
@@ -34,7 +34,9 @@ public class ClientConfig {
         client.setPort(port);
         client.setReadTimeout(30);
         client.setDispatcher(dispatcher);
-        dispatcher.setMsgHandlers(Lists.newArrayList(new AuthHandler()));
+        AuthHandler authHandler = new AuthHandler(client);
+        dispatcher.setChannelHandlers(Lists.newArrayList(authHandler));
+        dispatcher.setMsgHandlers(Lists.newArrayList(new DemoCmdHandler()));
         client.connect();
         return client;
     }

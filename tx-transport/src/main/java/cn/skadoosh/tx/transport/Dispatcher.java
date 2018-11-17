@@ -1,6 +1,8 @@
 package cn.skadoosh.tx.transport;
 
 
+import cn.skadoosh.tx.core.message.Packet;
+import cn.skadoosh.tx.core.message.Response;
 import cn.skadoosh.tx.transport.handler.ChannelHandler;
 import cn.skadoosh.tx.transport.handler.ExceptionHandler;
 import cn.skadoosh.tx.transport.handler.MessageHandler;
@@ -39,7 +41,7 @@ public class Dispatcher extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("channel actived", ctx);
+        log.debug("channel activated", ctx);
         TxChannel channel = new TxChannel(ctx.channel());
         ctx.channel().attr(CHANNEL).set(channel);
         executor.execute(() -> {
@@ -51,7 +53,6 @@ public class Dispatcher extends ChannelInboundHandlerAdapter {
                 caught(channel, e);
             }
         });
-        super.channelActive(ctx);
     }
 
     @Override
@@ -67,12 +68,14 @@ public class Dispatcher extends ChannelInboundHandlerAdapter {
                 caught(channel, e);
             }
         });
-        super.channelInactive(ctx);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         TxChannel channel = ctx.channel().attr(CHANNEL).get();
+        if(msg instanceof Response){
+            channel.notify((Packet) msg);
+        }
         executor.execute(() -> {
             long start = System.currentTimeMillis();
             try {
@@ -84,10 +87,10 @@ public class Dispatcher extends ChannelInboundHandlerAdapter {
                         }
                     }
                 }
+                log.debug("channel:{}, cost:[{}]ms msg:{}", ctx, System.currentTimeMillis() - start, msg);
             } catch (Exception e) {
                 caught(channel, e);
             } finally {
-                log.debug("channel:{}, cost:[{}]ms msg:{}", ctx, System.currentTimeMillis() - start, msg);
             }
         });
     }
@@ -97,7 +100,6 @@ public class Dispatcher extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         TxChannel channel = ctx.channel().attr(CHANNEL).get();
         this.caught(channel, cause);
-        super.exceptionCaught(ctx, cause);
     }
 
 
@@ -108,4 +110,5 @@ public class Dispatcher extends ChannelInboundHandlerAdapter {
             }
         });
     }
+
 }

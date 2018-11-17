@@ -13,4 +13,8 @@ public class Response<T> extends Packet {
     private String message;
     private T data;
 
+    public boolean success(){
+        return this.code == 200;
+    }
+
 }

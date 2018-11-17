@@ -2,8 +2,6 @@ package cn.skadoosh.tx;
 
 import cn.skadoosh.tx.transport.TxChannel;
 import com.google.common.collect.Sets;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.Data;
 
 import java.util.Set;

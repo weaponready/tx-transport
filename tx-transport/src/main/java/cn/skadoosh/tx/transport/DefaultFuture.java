@@ -1,11 +1,11 @@
 package cn.skadoosh.tx.transport;
 
 import cn.skadoosh.tx.core.message.Packet;
-import cn.skadoosh.tx.core.message.Response;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * create by jimmy
@@ -21,6 +21,7 @@ public class DefaultFuture<T> implements ResponseFuture<T> {
     private Exception exception = null;
     protected List<FutureListener> listeners;
     private long createTime = System.currentTimeMillis();
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
 
     private Packet request;
 
@@ -29,25 +30,21 @@ public class DefaultFuture<T> implements ResponseFuture<T> {
     }
 
     @Override
-    public void onSuccess(Response<T> response) {
-        this.result = response.getData();
+    public void onSuccess(T response) {
+        this.result = response;
         done();
     }
 
     @Override
-    public void onFailure(Response<T> response) {
+    public void onFailure(Exception e) {
+        this.exception = e;
         done();
     }
 
     @Override
     public boolean cancel() {
-        synchronized (lock) {
-            if (!isDoing()) {
-                return false;
-            }
-            state = FutureState.CANCELLED;
-            lock.notifyAll();
-        }
+        countDownLatch.countDown();
+        state = FutureState.CANCELLED;
         notifyListeners();
         return true;
     }
@@ -68,8 +65,12 @@ public class DefaultFuture<T> implements ResponseFuture<T> {
     }
 
     @Override
-    public T getValue() {
-        return null;
+    public T getValue() throws Exception {
+        countDownLatch.await();
+        if (this.exception != null) {
+            throw this.exception;
+        }
+        return this.result;
     }
 
     @Override
@@ -106,15 +107,8 @@ public class DefaultFuture<T> implements ResponseFuture<T> {
     }
 
     protected boolean done() {
-        synchronized (lock) {
-            if (!isDoing()) {
-                return false;
-            }
-
-            state = FutureState.DONE;
-            lock.notifyAll();
-        }
-
+        countDownLatch.countDown();
+        this.state = FutureState.DONE;
         notifyListeners();
         return true;
     }

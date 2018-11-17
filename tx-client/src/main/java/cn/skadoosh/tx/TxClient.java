@@ -1,8 +1,11 @@
 package cn.skadoosh.tx;
 
 import cn.skadoosh.tx.core.message.Heartbeat;
+import cn.skadoosh.tx.core.message.Packet;
+import cn.skadoosh.tx.exception.TxException;
 import cn.skadoosh.tx.handler.ReconnectHandler;
 import cn.skadoosh.tx.transport.Dispatcher;
+import cn.skadoosh.tx.transport.Future;
 import cn.skadoosh.tx.transport.TxChannel;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -89,10 +92,9 @@ public class TxClient {
 
         bootstrap.remoteAddress(server, port);
         try {
-            Channel channel = bootstrap.connect().sync().channel();
-            this.channel = new TxChannel(channel);
+            Channel ch = bootstrap.connect().sync().channel();
+            this.channel = new TxChannel(ch);
             log.debug("connected!");
-            startHeartbeat(this.channel);
             this.alive.set(true);
             this.tryCounter.set(0);
             this.connecting.set(false);
@@ -110,7 +112,7 @@ public class TxClient {
 
     }
 
-    private void startHeartbeat(TxChannel channel) {
+    public void startHeartbeat(TxChannel channel) {
         heartbeatTimer = new Timer();
         heartbeatTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -133,6 +135,19 @@ public class TxClient {
         if (loopGroup != null) {
             loopGroup.shutdownGracefully();
         }
+    }
+
+    /**
+     * 发送消息
+     * @param packet
+     * @param <T>
+     * @return
+     */
+    public <T> Future<T> send(Packet packet){
+        if(this.channel==null || this.connecting.get() || !this.alive.get() ){
+            throw new TxException();
+        }
+        return this.channel.write(packet);
     }
 
 }

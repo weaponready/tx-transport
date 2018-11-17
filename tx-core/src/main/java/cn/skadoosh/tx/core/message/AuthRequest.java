@@ -13,7 +13,7 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthRequest extends Packet{
+public class AuthRequest extends Packet implements Request{
 
     private String ip;
     private int port;
